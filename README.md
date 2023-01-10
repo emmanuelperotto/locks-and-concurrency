@@ -2,6 +2,8 @@
 
 Load testing RDBMS locks in high concurrency using different queries to check data integrity, latency and throughput. 
 
+
+It simulates a transfer money feature between accounts
 Scenarios:
 - Inconsistent (queries that can't guarantee data integrity)
 - Pessimistic (queries using pessimistic lock to guarantee data integrity)
