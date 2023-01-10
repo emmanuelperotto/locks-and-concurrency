@@ -9,6 +9,42 @@ import (
 	"context"
 )
 
+const creditAccount = `-- name: CreditAccount :one
+UPDATE account SET balance=balance+$1::numeric, version=version+1
+WHERE id=$2::integer
+RETURNING id, balance, version
+`
+
+type CreditAccountParams struct {
+	Amount string
+	ID     int32
+}
+
+func (q *Queries) CreditAccount(ctx context.Context, arg CreditAccountParams) (Account, error) {
+	row := q.db.QueryRowContext(ctx, creditAccount, arg.Amount, arg.ID)
+	var i Account
+	err := row.Scan(&i.ID, &i.Balance, &i.Version)
+	return i, err
+}
+
+const debitAccount = `-- name: DebitAccount :one
+UPDATE account SET balance=balance - $1::numeric, version=version+1
+WHERE id=$2::integer AND balance >= $1::numeric
+RETURNING id, balance, version
+`
+
+type DebitAccountParams struct {
+	Amount string
+	ID     int32
+}
+
+func (q *Queries) DebitAccount(ctx context.Context, arg DebitAccountParams) (Account, error) {
+	row := q.db.QueryRowContext(ctx, debitAccount, arg.Amount, arg.ID)
+	var i Account
+	err := row.Scan(&i.ID, &i.Balance, &i.Version)
+	return i, err
+}
+
 const getAccount = `-- name: GetAccount :one
 SELECT id, balance, version FROM account
     WHERE id=$1

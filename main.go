@@ -35,10 +35,13 @@ func main() {
     app.Post("/optimistic-transfer", h.OptimisticLockTransfer)
     app.Post("/pessimistic-transfer", h.PessimisticLockTransfer)
 
+    app.Post("/transfer", h.Transfer)
+
     log.Panic(app.Listen(":3000"))
 }
 
 func connectDB() (*repository.Queries, *sql.DB) {
+
     db, err := sql.Open("postgres", "postgresql://user:example@localhost:5432/ledger?sslmode=disable")
     if err != nil {
         log.Panic("can't connect to DB", err)

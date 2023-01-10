@@ -10,6 +10,8 @@ import (
 
 type Querier interface {
 	CreateTransfer(ctx context.Context, arg CreateTransferParams) (Transfer, error)
+	CreditAccount(ctx context.Context, arg CreditAccountParams) (Account, error)
+	DebitAccount(ctx context.Context, arg DebitAccountParams) (Account, error)
 	GetAccount(ctx context.Context, id int32) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int32) (Account, error)
 	OptimisticUpdateAccount(ctx context.Context, arg OptimisticUpdateAccountParams) (Account, error)

@@ -1,6 +1,7 @@
 package handler
 
 import (
+    "context"
     "database/sql"
     "fmt"
     "github.com/emmanuelperotto/locks-and-concurrency/internal/repository"
@@ -33,6 +34,81 @@ func NewTransfer(queries *repository.Queries, db *sql.DB) Transfer {
         queries: queries,
         db:      db,
     }
+}
+
+// Transfer is the efficient way to make transfers between accounts
+// BEGIN
+// Create Transfer
+// Debit 'from' account balance (- transfer amount)
+// Credit 'to' account balance (+ transfer amount)
+// COMMIT
+func (h Transfer) Transfer(c *fiber.Ctx) error {
+    ctx := c.Context()
+    req := new(TransferRequest)
+
+    if err := c.BodyParser(req); err != nil {
+        return err
+    }
+
+    //init tx
+    tx, err := h.db.Begin()
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()
+
+    qtx := h.queries.WithTx(tx)
+    transfer, err := qtx.CreateTransfer(ctx, repository.CreateTransferParams{
+        Amount:        fmt.Sprintf("%f", req.Amount),
+        FromAccountID: req.From,
+        ToAccountID:   req.To,
+    })
+    if err != nil {
+        return err
+    }
+
+    fromAcc, toAcc, err := h.updateAccountBalances(ctx, qtx, req)
+    if err != nil {
+        return err
+    }
+
+    if err := tx.Commit(); err != nil {
+        return err
+    }
+
+    return c.JSON(TransferResponse{
+        From:   fromAcc,
+        To:     toAcc,
+        Amount: strToFloat64(transfer.Amount),
+    })
+}
+
+func (h Transfer) updateAccountBalances(ctx context.Context, qtx *repository.Queries, req *TransferRequest) (from repository.Account, to repository.Account, err error) {
+    if req.From < req.To {
+        from, err = qtx.DebitAccount(ctx, repository.DebitAccountParams{
+            Amount: fmt.Sprintf("%f", req.Amount),
+            ID:     req.From,
+        })
+
+        to, err = qtx.CreditAccount(ctx, repository.CreditAccountParams{
+            Amount: fmt.Sprintf("%f", req.Amount),
+            ID:     req.To,
+        })
+
+        return
+    }
+
+    to, err = qtx.CreditAccount(ctx, repository.CreditAccountParams{
+        Amount: fmt.Sprintf("%f", req.Amount),
+        ID:     req.To,
+    })
+
+    from, err = qtx.DebitAccount(ctx, repository.DebitAccountParams{
+        Amount: fmt.Sprintf("%f", req.Amount),
+        ID:     req.From,
+    })
+
+    return
 }
 
 // InconsistentTransfer is an inefficient way to make a transfer between accounts
@@ -182,7 +258,7 @@ func (h Transfer) PessimisticLockTransfer(c *fiber.Ctx) error {
 // Create Transfer
 // TRY to Update from account balance (current - transfer amount)
 // TRY to Update to account balance (current + transfer amount)
-// RETRY until succeeds
+// RETRY until succeeds OR just accept it will fail sometimes
 // COMMIT
 func (h Transfer) OptimisticLockTransfer(c *fiber.Ctx) error {
     ctx := c.Context()
