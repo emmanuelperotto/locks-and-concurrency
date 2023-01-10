@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./scripts/queries/"
+    schema: "./scripts/migrations/"
+    gen:
+      go:
+        package: "repository"
+        out: "internal/repository"
+        emit_interface: true
+        emit_empty_slices: true
