@@ -1,6 +1,8 @@
 # locks-and-concurrency
 
-Load testing RDBM locks in high concurrency using different queries in scenarios:
+Load testing RDBMS locks in high concurrency using different queries to check data integrity, latency and throughput. 
+
+Scenarios:
 - Inconsistent (queries that can't guarantee data integrity)
 - Pessimistic (queries using pessimistic lock to guarantee data integrity)
 - Optimistic (queries using optimistic lock to guarantee data integrity)
@@ -48,8 +50,6 @@ Load testing RDBM locks in high concurrency using different queries in scenarios
      vus............................: 27      min=27       max=299
      vus_max........................: 300     min=300      max=300
 
-
-
 # optimistic
 ✗ status was 200
 ↳  45% — ✓ 1761 / ✗ 2091
@@ -71,6 +71,7 @@ Load testing RDBM locks in high concurrency using different queries in scenarios
      iterations.....................: 3852   186.558662/s
      vus............................: 31     min=31       max=299
      vus_max........................: 300    min=300      max=300
+
 # optimized-transfer
 ✓ status was 200
 
