@@ -12,7 +12,7 @@ UPDATE account SET balance=$1, version=version+1
     WHERE id=$2
 RETURNING *;
 
--- name: AddBalanceToAccount :one
-UPDATE account SET balance=balance + $1, version=version+1
-    WHERE id=$2 AND version=$3
+-- name: OptimisticUpdateAccount :one
+UPDATE account SET balance=$1, version=version+1
+WHERE id=$2 AND version=$3
 RETURNING *;

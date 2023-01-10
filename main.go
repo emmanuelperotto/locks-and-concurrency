@@ -2,6 +2,7 @@ package main
 
 import (
     "database/sql"
+    "errors"
     "github.com/emmanuelperotto/locks-and-concurrency/internal/handler"
     "github.com/emmanuelperotto/locks-and-concurrency/internal/repository"
     "github.com/gofiber/fiber/v2"
@@ -10,7 +11,19 @@ import (
 )
 
 func main() {
-    app := fiber.New()
+    app := fiber.New(fiber.Config{ErrorHandler: func(ctx *fiber.Ctx, err error) error {
+        log.Println("error on request", err)
+        code := fiber.StatusInternalServerError
+
+        var e *fiber.Error
+        if errors.As(err, &e) {
+            code = e.Code
+        }
+        ctx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
+        return ctx.Status(code).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }})
     queries, db := connectDB()
     defer func(d *sql.DB) {
         _ = db.Close()
@@ -18,9 +31,9 @@ func main() {
 
     h := handler.NewTransfer(queries, db)
 
-    app.Post("/transfer", h.Transfer)
-    app.Post("/optimistic-transfer", h.Transfer)
-    app.Post("/pessimistic-transfer", h.Transfer)
+    app.Post("/inconsistent-transfer", h.InconsistentTransfer)
+    app.Post("/optimistic-transfer", h.OptimisticLockTransfer)
+    app.Post("/pessimistic-transfer", h.PessimisticLockTransfer)
 
     log.Panic(app.Listen(":3000"))
 }

@@ -9,10 +9,10 @@ import (
 )
 
 type Querier interface {
-	AddBalanceToAccount(ctx context.Context, arg AddBalanceToAccountParams) (Account, error)
 	CreateTransfer(ctx context.Context, arg CreateTransferParams) (Transfer, error)
 	GetAccount(ctx context.Context, id int32) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int32) (Account, error)
+	OptimisticUpdateAccount(ctx context.Context, arg OptimisticUpdateAccountParams) (Account, error)
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error)
 }
 
