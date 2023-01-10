@@ -36,12 +36,12 @@ func NewTransfer(queries *repository.Queries, db *sql.DB) Transfer {
     }
 }
 
-// Transfer is the efficient way to make transfers between accounts
-// BEGIN
-// Create Transfer
-// Debit 'from' account balance (- transfer amount)
-// Credit 'to' account balance (+ transfer amount)
-// COMMIT
+// Transfer is the efficient way to make transfers between accounts. It also avoids deadlocks
+//BEGIN
+//Create Transfer (INSERT INTO)
+//Debit 'from' account balance (UPDATE SET balance= balance - ? WHERE balance >= ?)
+//Credit 'to' account balance (UPDATE SET balance= balance + ?)
+//COMMIT
 func (h Transfer) Transfer(c *fiber.Ctx) error {
     ctx := c.Context()
     req := new(TransferRequest)
@@ -113,11 +113,11 @@ func (h Transfer) updateAccountBalances(ctx context.Context, qtx *repository.Que
 
 // InconsistentTransfer is an inefficient way to make a transfer between accounts
 // BEGIN
-// Get Account 1
-// Get Account 2
-// Create Transfer
-// Update from account balance (current - transfer amount)
-// Update to account balance (current + transfer amount)
+// Get Account 1 ( SELECT WHERE id=?)
+// Get Account 2 ( SELECT WHERE id=?)
+// Create Transfer (INSERT INTO)
+// Update from account balance (UPDATE SET balance=?)
+// Update to account balance (UPDATE SET balance=?)
 // COMMIT
 func (h Transfer) InconsistentTransfer(c *fiber.Ctx) error {
     ctx := c.Context()
@@ -183,11 +183,11 @@ func (h Transfer) InconsistentTransfer(c *fiber.Ctx) error {
 // but it is at least consistent
 //
 // BEGIN
-// Get Account 1 and lock it
-// Get Account 2 and lock it
+// Get Account 1 and lock it ( SELECT WHERE id=? FOR UPDATE)
+// Get Account 2 and lock it ( SELECT WHERE id=? FOR UPDATE)
 // Create Transfer
-// Update from account balance (current - transfer amount)
-// Update to account balance (current + transfer amount)
+// Update from account balance (UPDATE SET balance=?)
+// Update to account balance (UPDATE SET balance=?)
 // COMMIT and release locks
 func (h Transfer) PessimisticLockTransfer(c *fiber.Ctx) error {
     ctx := c.Context()
@@ -253,12 +253,11 @@ func (h Transfer) PessimisticLockTransfer(c *fiber.Ctx) error {
 // but it is at least consistent
 //
 // BEGIN
-// Get Account 1
-// Get Account 2
-// Create Transfer
-// TRY to Update from account balance (current - transfer amount)
-// TRY to Update to account balance (current + transfer amount)
-// RETRY until succeeds OR just accept it will fail sometimes
+// Get Account 1 ( SELECT WHERE id=?)
+// Get Account 2 ( SELECT WHERE id=?)
+// Create Transfer (INSERT INTO)
+// TRY to Update from account balance (UPDATE SET balance=? WHERE version=?)
+// TRY to Update to account balance (UPDATE SET balance=? WHERE version=?)
 // COMMIT
 func (h Transfer) OptimisticLockTransfer(c *fiber.Ctx) error {
     ctx := c.Context()

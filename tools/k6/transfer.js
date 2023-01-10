@@ -12,7 +12,7 @@ export const options = {
 
 
 export default function () {
-    const url = 'http://localhost:3000/inconsistent-transfer'
+    const url = 'http://localhost:3000/transfer'
     const requestOptions = [{from: 1, to: 2}, {from: 2, to: 1}]
     // const opt = requestOptions[Math.floor(Math.random()*requestOptions.length)]
     const opt = requestOptions[0]
