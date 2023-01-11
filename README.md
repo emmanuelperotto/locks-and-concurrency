@@ -14,11 +14,18 @@ Scenarios:
 
 ```sql
 BEGIN
-Get Account 1 ( SELECT WHERE id=?)
-Get Account 2 ( SELECT WHERE id=?)
-Create Transfer (INSERT INTO)
-Update account 1 balance (UPDATE SET balance=?)
-Update account 2 balance (UPDATE SET balance=?)
+
+<!-- GET Accounts 1 and 2 -->
+SELECT * FROM account WHERE id=$1;
+SELECT * FROM account WHERE id=$1;
+
+<!-- Create Transfer -->
+INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
+
+<!-- UPDATE accounts setting its final balance -->
+UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
+UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
+
 COMMIT
 ```
 
