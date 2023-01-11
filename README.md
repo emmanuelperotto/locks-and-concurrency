@@ -11,6 +11,14 @@ Scenarios:
 - Optimized (optimized queries to guarantee data integrity and to avoid deadlocks)
 
 # inconsistent
+// BEGIN
+// Get Account 1 ( SELECT WHERE id=?)
+// Get Account 2 ( SELECT WHERE id=?)
+// Create Transfer (INSERT INTO)
+// Update from account balance (UPDATE SET balance=?)
+// Update to account balance (UPDATE SET balance=?)
+// COMMIT
+
 ✓ status was 200
 
      checks.........................: 100.00% ✓ 3865       ✗ 0
