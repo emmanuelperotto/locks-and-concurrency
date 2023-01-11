@@ -134,7 +134,7 @@ COMMIT
      vus_max........................: 300    min=300      max=300
 
 # Optimized-transfer
-Optimized queries to guarantee data integrity and to avoid deadlocks
+Optimized queries to guarantee data integrity and to avoid deadlocks with high throughput and low latency
 
 ```sql
 BEGIN
