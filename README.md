@@ -5,12 +5,13 @@ Load testing RDBMS locks in high concurrency using different queries to check da
 
 It simulates a transfer money feature between accounts
 Scenarios:
-- Inconsistent (queries that can't guarantee data integrity)
-- Pessimistic (queries using pessimistic lock to guarantee data integrity)
-- Optimistic (queries using optimistic lock to guarantee data integrity)
-- Optimized (optimized queries to guarantee data integrity and to avoid deadlocks)
+- Inconsistent
+- Pessimistic
+- Optimistic
+- Optimized
 
-# inconsistent
+# Inconsistent
+Queries that can't guarantee data integrity 
 
 ```sql
 BEGIN
@@ -49,7 +50,27 @@ COMMIT
      vus............................: 33      min=33       max=299
      vus_max........................: 300     min=300      max=300
 
-# pessimistic
+# Pessimistic
+Queries using pessimistic lock to guarantee data integrity 
+
+```sql
+BEGIN
+
+<!-- GET and LOCK Accounts 1 and 2 -->
+SELECT * FROM account WHERE id=$1 FOR UPDATE; 
+SELECT * FROM account WHERE id=$1 FOR UPDATE;
+
+<!-- Create Transfer -->
+INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
+
+<!-- UPDATE accounts setting its final balance -->
+UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
+UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
+
+COMMIT
+```
+
+
 ✓ status was 200
 
      checks.........................: 100.00% ✓ 3802       ✗ 0
@@ -70,7 +91,26 @@ COMMIT
      vus............................: 27      min=27       max=299
      vus_max........................: 300     min=300      max=300
 
-# optimistic
+# Optimistic
+Queries using optimistic lock to guarantee data integrity
+
+```sql
+BEGIN
+
+<!-- GET Accounts 1 and 2 -->
+SELECT * FROM account WHERE id=$1;
+SELECT * FROM account WHERE id=$1;
+
+<!-- Create Transfer -->
+INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
+
+<!-- UPDATE accounts using version column -->
+UPDATE account SET balance=$1, version=version+1 WHERE id=$2 AND version=$3 RETURNING *;
+UPDATE account SET balance=$1, version=version+1 WHERE id=$2 AND version=$3 RETURNING *;
+
+COMMIT
+```
+
 ✗ status was 200
 ↳  45% — ✓ 1761 / ✗ 2091
 
@@ -92,7 +132,24 @@ COMMIT
      vus............................: 31     min=31       max=299
      vus_max........................: 300    min=300      max=300
 
-# optimized-transfer
+# Optimized-transfer
+Optimized queries to guarantee data integrity and to avoid deadlocks
+
+```sql
+BEGIN
+
+<!-- Create Transfer -->
+INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
+
+<!-- DEBIT from account  -->
+UPDATE account SET balance=balance - $1, version=version+1 WHERE id=$2 AND balance >= $1 RETURNING *;
+
+<!-- CREDIT into account -->
+UPDATE account SET balance=balance + $1, version=version+1 WHERE id=$2 AND RETURNING *;
+
+COMMIT
+```
+
 ✓ status was 200
 
      checks.........................: 100.00% ✓ 3856       ✗ 0
