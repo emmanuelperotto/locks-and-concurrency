@@ -16,14 +16,14 @@ Queries that can't guarantee data integrity
 ```sql
 BEGIN
 
-<!-- GET Accounts 1 and 2 -->
+-- GET Accounts 1 and 2
 SELECT * FROM account WHERE id=$1;
 SELECT * FROM account WHERE id=$1;
 
-<!-- Create Transfer -->
+-- Create Transfer
 INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
 
-<!-- UPDATE accounts setting its final balance -->
+-- UPDATE accounts setting its final balance
 UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
 UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
 
@@ -56,14 +56,14 @@ Queries using pessimistic lock to guarantee data integrity
 ```sql
 BEGIN
 
-<!-- GET and LOCK Accounts 1 and 2 -->
+-- GET and LOCK Accounts 1 and 2
 SELECT * FROM account WHERE id=$1 FOR UPDATE; 
 SELECT * FROM account WHERE id=$1 FOR UPDATE;
 
-<!-- Create Transfer -->
+-- Create Transfer
 INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
 
-<!-- UPDATE accounts setting its final balance -->
+-- UPDATE accounts setting its final balance
 UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
 UPDATE account SET balance=$1, version=version+1 WHERE id=$2 RETURNING *;
 
@@ -97,14 +97,14 @@ Queries using optimistic lock to guarantee data integrity
 ```sql
 BEGIN
 
-<!-- GET Accounts 1 and 2 -->
+-- GET Accounts 1 and 2
 SELECT * FROM account WHERE id=$1;
 SELECT * FROM account WHERE id=$1;
 
-<!-- Create Transfer -->
+-- Create Transfer
 INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
 
-<!-- UPDATE accounts using version column -->
+-- UPDATE accounts using version column
 UPDATE account SET balance=$1, version=version+1 WHERE id=$2 AND version=$3 RETURNING *;
 UPDATE account SET balance=$1, version=version+1 WHERE id=$2 AND version=$3 RETURNING *;
 
@@ -138,13 +138,13 @@ Optimized queries to guarantee data integrity and to avoid deadlocks
 ```sql
 BEGIN
 
-<!-- Create Transfer -->
+-- Create Transfer
 INSERT INTO transfer (amount, from_account_id, to_account_id) VALUES ($1, $2, $3) RETURNING *;
 
-<!-- DEBIT from account  -->
+-- DEBIT from account
 UPDATE account SET balance=balance - $1, version=version+1 WHERE id=$2 AND balance >= $1 RETURNING *;
 
-<!-- CREDIT into account -->
+-- CREDIT into account
 UPDATE account SET balance=balance + $1, version=version+1 WHERE id=$2 AND RETURNING *;
 
 COMMIT
